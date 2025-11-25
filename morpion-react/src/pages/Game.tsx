@@ -1,151 +1,174 @@
-import React, { useEffect, useState } from 'react'
-import Cell from '../components/Cell'
-import { saveState, loadState } from '../utils/storage'
-import type { GameState, CellValue } from '../types'
+import React, { useEffect, useState } from "react";
+import Cell from "../components/Cell";
+import { saveState, loadState } from "../utils/storage";
+import type { GameState, CellValue } from "../types";
 
 const WIN_LINES = [
   [0,1,2],[3,4,5],[6,7,8],
   [0,3,6],[1,4,7],[2,5,8],
   [0,4,8],[2,4,6]
-] as const
+] as const;
 
 function checkWinner(board: CellValue[]) {
-  for (const line of WIN_LINES) {
-    const [a,b,c] = line
+  for (const [a,b,c] of WIN_LINES) {
     if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return { winner: board[a], line }
+      return { winner: board[a], line: [a,b,c] };
     }
   }
-  if (board.every(Boolean)) return { winner: null }
-  return null
+  if (board.every(Boolean)) return { winner: null }; // draw
+  return null;
 }
 
 function cpuMove(board: CellValue[]) {
-  const empty = board.map((v,i)=> v ? null : i).filter((v): v is number => v !== null)
-  if (!empty.length) return null
-  return empty[Math.floor(Math.random() * empty.length)]
+  const empty = board
+    .map((v,i)=> v ? null : i)
+    .filter((v): v is number => v !== null);
+  if (!empty.length) return null;
+  return empty[Math.floor(Math.random()*empty.length)];
 }
 
-export default function Game({ game, setGame }: { game: GameState | null; setGame: (g: GameState | null) => void }) {
+export default function Game({ game, setGame }: { game: GameState|null; setGame: (g: GameState|null)=>void }) {
 
   const [state, setState] = useState<GameState>(() =>
-    game || (loadState('currentGame') as GameState)
-  )
+    game || (loadState("currentGame") as GameState)
+  );
 
-  const isVariant = state.variant === 'variant'
+  const isVariant = state.variant === "variant";
 
-  const [result, setResult] = useState<null | { winner: 'X'|'O'|null; line?: number[] }>(null)
+  const [result, setResult] = useState<null | {winner:'X'|'O'|null; line?:number[] }>(null);
 
-  useEffect(() => {
-    saveState('currentGame', state)
-  }, [state])
+  useEffect(() => saveState("currentGame", state), [state]);
 
-  // Vérifier victoire
-  useEffect(() => {
-    const res = checkWinner(state.board)
-    if (res) {
+  // Check winner
+ useEffect(() => {
+  const r = checkWinner(state.board);
+  if (r && !result) { // <-- only save if result isn't already set
+    const history = loadState<any[]>("history") || [];
+    history.push({
+      id: state.id,
+      mode: state.mode,
+      variant: state.variant,
+      players: state.players,
+      winner: r.winner,
+      Symbol: state.startingSymbol, 
+      date: new Date().toISOString(),
+    });
+    saveState("history", history);
+    setResult(r);
+  }
+}, [state.board, result]);
 
-      // Historique
-      const history = loadState<any[]>('history') || []
-      history.push({
-        id: state.id,
-        mode: state.mode,
-        variant: state.variant,
-        players: state.players,
-        winner: res.winner,
-        date: new Date().toISOString()
-      })
-      saveState('history', history)
 
-      setResult(res)
-    }
-  }, [state.board])
-
-  // --- LOGIQUE VARIANT : 3 COUPS MAX ---
-  function applyVariant(board: CellValue[], player: 'X' | 'O', pos: number) {
-    const moves = state.lastMoves || { X: [], O: [] }
-
-    moves[player].push(pos)
+  // Variant rule: remove oldest after 3 placements
+  function applyVariant(board:CellValue[], player:'X'|'O', pos:number) {
+    const moves = state.lastMoves || { X:[], O:[] };
+    moves[player].push(pos);
 
     if (moves[player].length > 3) {
-      const old = moves[player].shift()!
-      board[old] = null
+      const old = moves[player].shift()!;
+      board[old] = null;
     }
-
-    return moves
+    return moves;
   }
 
-  function playAt(i: number) {
-    if (state.board[i] || result) return
+  function playAt(index:number) {
+    if (state.board[index] || result) return;
 
-    const next = [...state.board]
-    next[i] = state.turn
+    const newBoard = [...state.board];
+    newBoard[index] = state.turn;
 
-    let updatedMoves = state.lastMoves
+    let updatedMoves = state.lastMoves;
+    if (isVariant) updatedMoves = applyVariant(newBoard, state.turn, index);
 
-    if (isVariant) {
-      updatedMoves = applyVariant(next, state.turn, i)
-    }
+    const nextTurn = state.turn === "X" ? "O" : "X";
 
-    const nextTurn = state.turn === 'X' ? 'O' : 'X'
-
-    const newState = {
+    const updatedState: GameState = {
       ...state,
-      board: next,
+      board: newBoard,
       turn: nextTurn,
       lastMoves: updatedMoves
-    }
+    };
 
-    setState(newState)
+    setState(updatedState);
 
-    // --- CPU ---
-    if (state.mode === 'pve' && nextTurn === 'O') {
+    // ================ CPU LOGIC =================
+    if (state.mode === "pve" && nextTurn === state.startingSymbol) return;
+
+    if (state.mode === "pve" && nextTurn !== state.startingSymbol) {
       setTimeout(() => {
-        const pos = cpuMove(newState.board)
+        const pos = cpuMove(updatedState.board);
         if (pos !== null) {
+          const cpuBoard = [...updatedState.board];
+          cpuBoard[pos] = nextTurn;
 
-          const board2 = [...newState.board]
-          board2[pos] = 'O'
-
-          let cpuMoves = newState.lastMoves
-
-          if (isVariant) {
-            cpuMoves = applyVariant(board2, 'O', pos)
-          }
+          let cpuMoves = updatedState.lastMoves;
+          if (isVariant) cpuMoves = applyVariant(cpuBoard, nextTurn, pos);
 
           setState(prev => ({
             ...prev,
-            board: board2,
+            board: cpuBoard,
             lastMoves: cpuMoves,
-            turn: 'X'
-          }))
+            turn: prev.startingSymbol
+          }));
         }
-      }, 350)
+      }, 350);
     }
   }
-  // --- FIN VARIANT ---
 
   function abandon() {
-    setGame(null)
-    saveState('currentGame', null)
-    location.hash = 'home'
+    setGame(null);
+    saveState("currentGame", null);
+    location.hash = "home";
   }
 
   function reset() {
     setState({
       ...state,
       board: Array(9).fill(null),
-      lastMoves: { X: [], O: [] },
-      turn: 'X',
-      status: 'playing'
-    })
-    setResult(null)
+      lastMoves: { X:[], O:[] },
+      turn: state.startingSymbol,   // reset to chosen start symbol
+      status: "playing"
+    });
+    setResult(null);
+
+    // CPU should instantly play if human picked "O"
+    if (state.mode === "pve" && state.startingSymbol === "O") {
+      setTimeout(() => {
+        const pos = cpuMove(Array(9).fill(null));
+        if (pos !== null) {
+          const newBoard = Array(9).fill(null);
+          newBoard[pos] = "X";
+          setState(prev => ({
+            ...prev,
+            board: newBoard,
+            turn: "O"
+          }));
+        }
+      }, 250);
+    }
   }
 
+  // FIRST RENDER: if user picked O → CPU must play first
+  useEffect(() => {
+    if (state.mode === "pve" && state.startingSymbol === "O" && state.board.every(v => v === null)) {
+      setTimeout(() => {
+        const pos = cpuMove(state.board);
+        if (pos !== null) {
+          const board = [...state.board];
+          board[pos] = "X";
+          setState(prev => ({
+            ...prev,
+            board,
+            turn: "O"
+          }));
+        }
+      }, 300);
+    }
+  }, []);
+
+  // ======================== RENDER ==============================
   return (
     <section className="game card">
-
-      {/* HEADER */}
       <div className="game-header">
         <div className="game-actions">
           <img src="/src/assets/logo_xo.png" alt="logo" />
@@ -161,16 +184,14 @@ export default function Game({ game, setGame }: { game: GameState | null; setGam
         </div>
       </div>
 
-      {/* BOARD */}
-      <div className="board" role="grid">
+      <div className="board">
         {state.board.map((v, i) => {
-
           const willDisappear =
             state.lastMoves &&
             (
               (state.lastMoves.X.length === 3 && i === state.lastMoves.X[0]) ||
               (state.lastMoves.O.length === 3 && i === state.lastMoves.O[0])
-            )
+            );
 
           return (
             <Cell
@@ -178,28 +199,10 @@ export default function Game({ game, setGame }: { game: GameState | null; setGam
               value={v}
               onClick={() => playAt(i)}
               className={willDisappear ? "to-disappear" : ""}
-              highlight={!!(result?.line?.includes(i))}
+              highlight={!!result?.line?.includes(i)}
             />
-          )
+          );
         })}
-      </div>
-
-      {/* SCORE */}
-      <div className="score-grid">
-        <div className="score-box score-x">
-          <div>{state.turn === "X" ? "YOU" : "X"}</div>
-          <div>0</div>
-        </div>
-
-        <div className="score-box score-ties">
-          <div>TIES</div>
-          <div>0</div>
-        </div>
-
-        <div className="score-box score-o">
-          <div>{state.turn === "O" ? "YOU" : "O"}</div>
-          <div>0</div>
-        </div>
       </div>
 
       {result && (
@@ -212,5 +215,5 @@ export default function Game({ game, setGame }: { game: GameState | null; setGam
         </div>
       )}
     </section>
-  )
+  );
 }

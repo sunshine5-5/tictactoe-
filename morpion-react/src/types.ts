@@ -13,11 +13,20 @@ export interface Players {
 export interface GameState {
   id: number
   mode: Mode
+
+  // 🔥 Added - needed for variant mode
   variant: 'classic' | 'variant'
+
   players: Players
   board: CellValue[]
+
+  // 🔥 Added - player chooses X or O in Home screen
+  startingSymbol: 'X' | 'O'
+
   turn: 'X' | 'O'
   status: 'playing' | 'finished'
+
+  // 🔥 Added - needed for Variante (3 coups max)
   lastMoves?: {
     X: number[]
     O: number[]

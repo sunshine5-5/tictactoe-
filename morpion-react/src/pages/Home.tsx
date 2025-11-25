@@ -14,7 +14,7 @@ export default function Home({ startGame }: { startGame: (g: GameState) => void 
       id: Date.now(),
       mode,
       variant,
-      players: mode === 'pve' ? { human: name1 || 'Joueur' } : { p1: name1 || 'Joueur 1', p2: name2 || 'Joueur 2' },
+      players: mode === 'pve' ? { human: name1 || 'Joueur'  } : { p1: name1 || 'Joueur 1', p2: name2 || 'Joueur 2' },
       board: Array(9).fill(null),
       lastMoves: { X: [], O: [] }, 
       startingSymbol: symbol,
@@ -52,8 +52,8 @@ const [symbol, setSymbol] = useState<'X' | 'O'>('X')
         <div className="symbols">
           <label className="symbol-option">
             <input
-  type="radio"
-  name="symbol"
+            type="radio"
+            name="symbol"
   value="X"
   defaultChecked
   onChange={() => setSymbol('X')}

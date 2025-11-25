@@ -7,23 +7,27 @@ export default function Leaderboard() {
 
   // Construction du tableau des scores
   const scores: Record<string, number> = {}
-
   history.forEach(game => {
-    if (game.winner === null) return // match nul → ignore
+  if (game.winner === null) return; // draw → ignore
 
-    let winnerName = ""
+  let winnerName = "";
 
-    if (game.mode === "pve") {
-      winnerName = game.winner === "X"
-        ? game.players.human || "Joueur"
-        : "Ordinateur"
+  if (game.mode === "pve") {
+    // Human symbol
+    const humanSymbol = game.Symbol || "X"; // or store humanSymbol in game.players
+    if (game.winner === humanSymbol) {
+      winnerName = game.players.human || "Joueur";
     } else {
-      winnerName = game.winner === "X"
-        ? game.players.p1 || "Joueur 1"
-        : game.players.p2 || "Joueur 2"
+      winnerName = "Ordinateur";
     }
+  } else {
+    // PvP
+    winnerName = game.winner === "X"
+      ? game.players.p1 || "Joueur 1"
+      : game.players.p2 || "Joueur 2";
+  }
 
-    scores[winnerName] = (scores[winnerName] || 0) + 1
+  scores[winnerName] = (scores[winnerName] || 0) + 1;
   })
 
   const sorted = Object.entries(scores)
