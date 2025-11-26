@@ -5,60 +5,93 @@ export default function Leaderboard() {
 
   const history = loadState<any[]>('history') || []
 
-  // Construction du tableau des scores
   const scores: Record<string, number> = {}
+  const drawPairs: Record<string, number> = {} // 🔵 Compteur match nuls par paire
+
   history.forEach(game => {
-  if (game.winner === null) return; // draw → ignore
 
-  let winnerName = "";
+    const p1 = game.players.p1 || game.players.human || "Joueur 1"
+    const p2 = game.mode === "pve" ? "Ordinateur" : game.players.p2 || "Joueur 2"
 
-  if (game.mode === "pve") {
-    // Human symbol
-    const humanSymbol = game.Symbol || "X"; // or store humanSymbol in game.players
-    if (game.winner === humanSymbol) {
-      winnerName = game.players.human || "Joueur";
-    } else {
-      winnerName = "Ordinateur";
+    // clé unique pour la paire (ordre garanti)
+    const key = [p1, p2].sort().join(" vs ")
+
+    // MATCH NUL → incrémenter le compteur
+    if (game.winner === null) {
+      drawPairs[key] = (drawPairs[key] || 0) + 1
+      return
     }
-  } else {
-    // PvP
-    winnerName = game.winner === "X"
-      ? game.players.p1 || "Joueur 1"
-      : game.players.p2 || "Joueur 2";
-  }
 
-  scores[winnerName] = (scores[winnerName] || 0) + 1;
+    // Victoires
+    let winnerName = ""
+
+    if (game.mode === "pve") {
+      const humanSymbol = game.startingSymbol ?? "X"
+      winnerName = game.winner === humanSymbol ? p1 : "Ordinateur"
+    } else {
+      winnerName = game.winner === "X" ? p1 : p2
+    }
+
+    scores[winnerName] = (scores[winnerName] || 0) + 1
   })
 
+  // classement des joueurs
   const sorted = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+
+  // classement des matchs nuls
+  const sortedDraws = Object.entries(drawPairs)
     .sort((a, b) => b[1] - a[1])
 
   return (
     <section className="leaderboard card">
       <h2>Classement</h2>
 
-      {sorted.length === 0 && (
+      {sorted.length === 0 && sortedDraws.length === 0 && (
         <p>Aucun résultat pour le moment</p>
       )}
 
       <ul>
+        {/* 🟨 Scores */}
         {sorted.map(([name, wins], i) => (
           <li key={i}>
-            {name} — {wins} victoire{wins > 1 ? 's' : ''}
+            {name} — {wins} victoire{wins > 1 ? "s" : ""}
           </li>
         ))}
+
+        {/* 🟦 Matchs nuls groupés */}
+        {sortedDraws.length > 0 && (
+          <>
+            <h2>Matchs nuls</h2>
+            {sortedDraws.map(([pair, count], i) => (
+              <li key={"tie-" + i}>
+                {pair} → <strong>{count} match{count > 1 ? "s" : ""} nul{count > 1 ? "s" : ""}</strong>
+              </li>
+            ))}
+          </>
+        )}
       </ul>
-      
-      <h3>Historique des parties joués </h3>
+
+      <h3>Historique des parties jouées</h3>
+
       <ul>
-        {history.map((h, i) => (
-          <li key={i}>
-            
-            {h.players.p1 || h.players.human} vs {h.mode === "pve" ? "Ordinateur" : h.players.p2}  
-            → Gagnant : {h.winner ?? "Match nul"}  
-            <em> ({new Date(h.date).toLocaleString()})</em>
-          </li>
-        ))}
+        {history.map((h, i) => {
+          const p1 = h.players.p1 || h.players.human || "Joueur 1"
+          const p2 = h.mode === "pve" ? "Ordinateur" : h.players.p2 || "Joueur 2"
+
+          return (
+            <li key={i}>
+              {p1} vs {p2} →
+              <strong>
+                {h.winner === null  
+                  ? " Match nul"
+                  : ` Gagnant : ${h.winner === "X" ? p1 : p2}`
+                }
+              </strong>
+              <em> ({new Date(h.date).toLocaleString()})</em>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
