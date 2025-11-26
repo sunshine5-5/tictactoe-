@@ -34,33 +34,61 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
   );
 
   const isVariant = state.variant === "variant";
-
   const [result, setResult] = useState<null | {winner:'X'|'O'|null; line?:number[] }>(null);
+  const [score, setScore] = useState({ wins: 0, losses: 0, draws: 0 });
 
+  // --------- SCORE FILTERED BY PLAYER NAME ---------
+  const playerName = state.mode === "pve" ? state.players.human || "Human" : state.players.p1 || "Player 1";
+
+  useEffect(() => {
+    const history = loadState<any[]>("history") || [];
+    let wins = 0, losses = 0, draws = 0;
+
+    history.forEach(h => {
+      if (state.mode === "pve") {
+        const humanSymbol = h.startingSymbol ?? "X";
+        if (h.players.human !== playerName) return; // skip other humans
+        if (h.winner === humanSymbol) wins++;
+        else if (h.winner === null) draws++;
+        else losses++;
+      } else { // pvp
+        const p1 = h.players.p1 || "Player 1";
+        const p2 = h.players.p2 || "Player 2";
+        if (p1 !== playerName && p2 !== playerName) return; // skip games not involving this player
+        if (h.winner === null) draws++;
+        else if (h.winner === "X" && p1 === playerName) wins++;
+        else if (h.winner === "O" && p2 === playerName) wins++;
+        else losses++;
+      }
+    });
+
+    setScore({ wins, losses, draws });
+  }, [state.board, result]);
+
+  // Save current game state
   useEffect(() => saveState("currentGame", state), [state]);
 
   // Check winner
- useEffect(() => {
-  const r = checkWinner(state.board);
-  if (r && !result) { // <-- only save if result isn't already set
-    const history = loadState<any[]>("history") || [];
-    history.push({
-      id: state.id,
-      mode: state.mode,
-      variant: state.variant,
-      players: state.players,
-      winner: r.winner,
-      Symbol: state.startingSymbol,
-      startingSymbol: state.startingSymbol,
-      date: new Date().toISOString(),
-    });
-    saveState("history", history);
-    setResult(r);
-  }
-}, [state.board, result]);
+  useEffect(() => {
+    const r = checkWinner(state.board);
+    if (r && !result) {
+      const history = loadState<any[]>("history") || [];
+      history.push({
+        id: state.id,
+        mode: state.mode,
+        variant: state.variant,
+        players: state.players,
+        winner: r.winner,
+        Symbol: state.startingSymbol,
+        startingSymbol: state.startingSymbol,
+        date: new Date().toISOString(),
+      });
+      saveState("history", history);
+      setResult(r);
+    }
+  }, [state.board, result]);
 
-
-  // Variant rule: remove oldest after 3 placements
+  // Variant rule
   function applyVariant(board:CellValue[], player:'X'|'O', pos:number) {
     const moves = state.lastMoves || { X:[], O:[] };
     moves[player].push(pos);
@@ -92,7 +120,7 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
 
     setState(updatedState);
 
-    // ================ CPU LOGIC =================
+    // CPU logic
     if (state.mode === "pve" && nextTurn === state.startingSymbol) return;
 
     if (state.mode === "pve" && nextTurn !== state.startingSymbol) {
@@ -127,12 +155,12 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
       ...state,
       board: Array(9).fill(null),
       lastMoves: { X:[], O:[] },
-      turn: state.startingSymbol,   // reset to chosen start symbol
-      status: "playing"
+      turn: state.startingSymbol,
+      status: 'playing'
     });
     setResult(null);
 
-    // CPU should instantly play if human picked "O"
+    // CPU first move if human picked "O"
     if (state.mode === "pve" && state.startingSymbol === "O") {
       setTimeout(() => {
         const pos = cpuMove(Array(9).fill(null));
@@ -149,7 +177,7 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
     }
   }
 
-  // FIRST RENDER: if user picked O → CPU must play first
+  // FIRST RENDER: CPU plays if human is "O"
   useEffect(() => {
     if (state.mode === "pve" && state.startingSymbol === "O" && state.board.every(v => v === null)) {
       setTimeout(() => {
@@ -167,22 +195,23 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
     }
   }, []);
 
-  // ======================== RENDER ==============================
   return (
     <section className="game card">
       <div className="game-header">
         <div className="game-actions">
           <img src="/src/assets/logo_xo.png" alt="logo" />
-
           <div className="turn-indicator-small">
             <strong>{state.turn}</strong>
             <span>Turn</span>
           </div>
-
           <button className="btn-secondary" onClick={reset}>
             <img src="/src/assets/reset.svg" className="rest-icon" />
           </button>
         </div>
+
+        {/* SCOREBOARD FILTERED BY PLAYER NAME */}
+       
+
       </div>
 
       <div className="board">
@@ -193,6 +222,7 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
               (state.lastMoves.X.length === 3 && i === state.lastMoves.X[0]) ||
               (state.lastMoves.O.length === 3 && i === state.lastMoves.O[0])
             );
+
 
           return (
             <Cell
@@ -207,18 +237,12 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
       </div>
 
 
-
-
-
-      {result && (
-        <div className="result">
-          {result.winner ? (
-            <p>Vainqueur: {result.winner}</p>
-          ) : (
-            <p>Match nul</p>
-          )}
-        </div>
-      )}
+      
+       <div className="scoreboard">
+  <p>Wins: <span>{score.wins}</span></p>
+  <p>Losses: <span>{score.losses}</span></p>
+  <p>Draws: <span>{score.draws}</span></p>
+</div>
     </section>
   );
 }
