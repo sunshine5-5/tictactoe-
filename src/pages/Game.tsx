@@ -15,7 +15,7 @@ function checkWinner(board: CellValue[]) {
       return { winner: board[a], line: [a,b,c] };
     }
   }
-  if (board.every(Boolean)) return { winner: null }; // draw
+  if (board.every(Boolean)) return { winner: null };
   return null;
 }
 
@@ -37,38 +37,63 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
   const [result, setResult] = useState<null | {winner:'X'|'O'|null; line?:number[] }>(null);
   const [score, setScore] = useState({ wins: 0, losses: 0, draws: 0 });
 
-  // --------- SCORE FILTERED BY PLAYER NAME ---------
-  const playerName = state.mode === "pve" ? state.players.human || "Human" : state.players.p1 || "Player 1";
+  // ----------------------------------------------------
+  // ⭐ CORRECT PLAYER NAME
+  // ----------------------------------------------------
+  const playerName =
+    state.mode === "pve"
+      ? state.players.human
+      : state.players.p1;
 
+  // ----------------------------------------------------
+  // ⭐ FIXED SCOREBOARD LOGIC
+  // ----------------------------------------------------
   useEffect(() => {
     const history = loadState<any[]>("history") || [];
     let wins = 0, losses = 0, draws = 0;
 
     history.forEach(h => {
+
+      // ---- PVE MODE ----
       if (state.mode === "pve") {
+        if (h.players.human !== playerName) return;
+
         const humanSymbol = h.startingSymbol ?? "X";
-        if (h.players.human !== playerName) return; // skip other humans
+
         if (h.winner === humanSymbol) wins++;
         else if (h.winner === null) draws++;
         else losses++;
-      } else { // pvp
-        const p1 = h.players.p1 || "Player 1";
-        const p2 = h.players.p2 || "Player 2";
-        if (p1 !== playerName && p2 !== playerName) return; // skip games not involving this player
-        if (h.winner === null) draws++;
-        else if (h.winner === "X" && p1 === playerName) wins++;
-        else if (h.winner === "O" && p2 === playerName) wins++;
-        else losses++;
+      }
+
+      // ---- PVP MODE ----
+      else {
+        const p1 = h.players.p1;
+        const p2 = h.players.p2;
+
+        if (p1 !== playerName && p2 !== playerName) return;
+
+        // Draw
+        if (h.winner === null) { draws++; return; }
+
+        // Player was X
+        if (p1 === playerName && h.winner === "X") wins++;
+        else if (p1 === playerName && h.winner !== "X") losses++;
+
+        // Player was O
+        if (p2 === playerName && h.winner === "O") wins++;
+        else if (p2 === playerName && h.winner !== "O") losses++;
       }
     });
 
     setScore({ wins, losses, draws });
   }, [state.board, result]);
 
-  // Save current game state
+  // SAVE CURRENT GAME
   useEffect(() => saveState("currentGame", state), [state]);
 
-  // Check winner
+  // ----------------------------------------------
+  // WINNER CHECK + SAVE HISTORY
+  // ----------------------------------------------
   useEffect(() => {
     const r = checkWinner(state.board);
     if (r && !result) {
@@ -88,7 +113,9 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
     }
   }, [state.board, result]);
 
-  // Variant rule
+  // ----------------------------------------------
+  // VARIANT RULE
+  // ----------------------------------------------
   function applyVariant(board:CellValue[], player:'X'|'O', pos:number) {
     const moves = state.lastMoves || { X:[], O:[] };
     moves[player].push(pos);
@@ -100,6 +127,9 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
     return moves;
   }
 
+  // ----------------------------------------------
+  // PLAY MOVE
+  // ----------------------------------------------
   function playAt(index:number) {
     if (state.board[index] || result) return;
 
@@ -120,7 +150,7 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
 
     setState(updatedState);
 
-    // CPU logic
+    // CPU
     if (state.mode === "pve" && nextTurn === state.startingSymbol) return;
 
     if (state.mode === "pve" && nextTurn !== state.startingSymbol) {
@@ -144,6 +174,9 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
     }
   }
 
+  // ----------------------------------------------
+  // EXIT + RESET
+  // ----------------------------------------------
   function abandon() {
     setGame(null);
     saveState("currentGame", null);
@@ -159,90 +192,93 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
       status: 'playing'
     });
     setResult(null);
-
-    // CPU first move if human picked "O"
-    if (state.mode === "pve" && state.startingSymbol === "O") {
-      setTimeout(() => {
-        const pos = cpuMove(Array(9).fill(null));
-        if (pos !== null) {
-          const newBoard = Array(9).fill(null);
-          newBoard[pos] = "X";
-          setState(prev => ({
-            ...prev,
-            board: newBoard,
-            turn: "O"
-          }));
-        }
-      }, 250);
-    }
   }
 
-  // FIRST RENDER: CPU plays if human is "O"
-  useEffect(() => {
-    if (state.mode === "pve" && state.startingSymbol === "O" && state.board.every(v => v === null)) {
-      setTimeout(() => {
-        const pos = cpuMove(state.board);
-        if (pos !== null) {
-          const board = [...state.board];
-          board[pos] = "X";
-          setState(prev => ({
-            ...prev,
-            board,
-            turn: "O"
-          }));
-        }
-      }, 300);
-    }
-  }, []);
-
+  // ----------------------------------------------
+  // RENDER UI
+  // ----------------------------------------------
   return (
     <section className="game card">
+
+      {/* HEADER */}
       <div className="game-header">
         <div className="game-actions">
           <img src="/src/assets/logo_xo.png" alt="logo" />
+
           <div className="turn-indicator-small">
             <strong>{state.turn}</strong>
             <span>Turn</span>
           </div>
+
           <button className="btn-secondary" onClick={reset}>
             <img src="/src/assets/reset.svg" className="rest-icon" />
           </button>
         </div>
-
-        {/* SCOREBOARD FILTERED BY PLAYER NAME */}
-       
-
       </div>
 
-      <div className="board">
-        {state.board.map((v, i) => {
-          const willDisappear =
-            state.lastMoves &&
-            (
-              (state.lastMoves.X.length === 3 && i === state.lastMoves.X[0]) ||
-              (state.lastMoves.O.length === 3 && i === state.lastMoves.O[0])
+      <div className="game-content">
+
+        {/* BOARD */}
+        <div className="board">
+          {state.board.map((v, i) => {
+            const willDisappear =
+              state.lastMoves &&
+              (
+                (state.lastMoves.X.length === 3 && i === state.lastMoves.X[0]) ||
+                (state.lastMoves.O.length === 3 && i === state.lastMoves.O[0])
+              );
+
+            return (
+              <Cell
+                key={i}
+                value={v}
+                onClick={() => playAt(i)}
+                className={willDisappear ? "to-disappear" : ""}
+                highlight={!!result?.line?.includes(i)}
+              />
             );
+          })}
+        </div>
 
-
-          return (
-            <Cell
-              key={i}
-              value={v}
-              onClick={() => playAt(i)}
-              className={willDisappear ? "to-disappear" : ""}
-              highlight={!!result?.line?.includes(i)}
-            />
-          );
-        })}
+        {/* SCOREBOARD */}
+        <div className="scoreboard">
+          <p>{playerName}</p>
+          <p>Wins: <span>{score.wins}</span></p>
+          <p>Losses: <span>{score.losses}</span></p>
+          <p>Draws: <span>{score.draws}</span></p>
+        </div>
       </div>
 
+      {/* POPUP */}
+        {result && (
+ <div className="game-popup">
+  <div className="popup-content">
+    
 
-      
-       <div className="scoreboard">
-  <p>Wins: <span>{score.wins}</span></p>
-  <p>Losses: <span>{score.losses}</span></p>
-  <p>Draws: <span>{score.draws}</span></p>
+    {result.winner ? (
+  <>
+    <h3>Le gagnant est :</h3>
+    <img 
+      src={`/src/assets/${result.winner.toLowerCase()}.svg`} 
+      alt={result.winner} 
+      style={{ width: '50px', height: '50px' }} // ajuste la taille si nécessaire
+    />
+  </>
+) : (
+  <span style={{ fontWeight: '700', fontSize: '1.2rem' }}>Match nul</span>
+)}
+
+    <div className="popup-buttons">
+      <button className="btn-leave" onClick={abandon}>accueil</button>
+      <button className="btn-restart" onClick={reset}>relancer</button>
+    </div>
+  </div>
 </div>
+
+)}
+
+
+
     </section>
   );
 }

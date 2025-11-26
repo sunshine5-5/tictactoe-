@@ -1,5 +1,5 @@
 /* ===================================================== */
-/*                 PALETTE DU PROJET                   */
+/*                 PALETTE DU PROJET                    */
 /* ===================================================== */
 :root {
   --primary: #36CDCA;
@@ -12,7 +12,12 @@
   --dark-grey: #203741;
   --radius: 14px;
 }
-*{
+
+/* ===================================================== */
+/*         GLOBAL RESET + STACKING FIX (IMPORTANT)       */
+/* ===================================================== */
+* {
+  box-sizing: border-box;
   font-family: "Science Gothic", sans-serif;
   font-optical-sizing: auto;
   font-weight: weight;
@@ -21,18 +26,12 @@
     "slnt" 0,
     "wdth" 100,
     "CTRS" 0;
-}
-
-/* ===================================================== */
-/*                RESET & BASE                        */
-/* ===================================================== */
-* {
-  box-sizing: border-box;
+  isolation: isolate; /* 🔥 FIXES POPUP NOT SHOWING ON TOP */
 }
 
 body {
   margin: 0;
-  background:  #B6CAD3;
+  background: #B6CAD3;
   color: white;
 }
 
@@ -42,22 +41,22 @@ body {
   max-width: 900px;
 }
 
+/* ANIMATION */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ===================================================== */
-/*                    NAVBAR                          */
+/*                    NAVBAR                             */
 /* ===================================================== */
-
 .nav {
   background: var(--dark-grey);
   padding: 0.9rem 0;
   box-shadow: 0 6px 0 var(--mid-grey-shadow);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
   animation: fadeIn 0.4s ease;
 }
 
@@ -77,7 +76,6 @@ body {
 .logo-icon {
   width: 170px;
   height: 170px;
-  
 }
 
 .logo {
@@ -112,9 +110,8 @@ nav {
 }
 
 /* ===================================================== */
-/*                    FOOTER                          */
+/*                        FOOTER                          */
 /* ===================================================== */
-
 .footer {
   padding: 1.4rem 0;
   text-align: center;
@@ -125,9 +122,8 @@ nav {
 }
 
 /* ===================================================== */
-/*                    PAGE HOME                       */
+/*                        HOME PAGE                       */
 /* ===================================================== */
-
 .home {
   background: var(--dark-grey);
   padding: 2rem;
@@ -214,8 +210,14 @@ nav {
   transform: translateY(-2px);
 }
 
+
+
+/* choix du type de jeu  */
+
+
+
 /* =============================== */
-/*       CHOISIR SON SYMBOLE       */
+/*       CHOOSE SYMBOL             */
 /* =============================== */
 
 .choose-symbol {
@@ -230,14 +232,12 @@ nav {
   margin-bottom: 0.8rem;
 }
 
-/* Conteneur X / O */
 .symbols {
   display: flex;
   justify-content: center;
   gap: 1.5rem;
 }
 
-/* Option X ou O */
 .symbol-option {
   background: var(--mid-grey);
   padding: 0.8rem;
@@ -246,52 +246,29 @@ nav {
   box-shadow: 0 6px 0 var(--dark-grey);
   cursor: pointer;
   transition: 0.2s ease;
-  position: relative;
 }
 
-.symbol-option input {
-  display: none;
-}
+.symbol-option input { display: none; }
 
-/* Icône X et O */
 .symbol-option img {
   width: 50px;
   height: 50px;
   pointer-events: none;
 }
 
-/* Hover */
 .symbol-option:hover {
-  background: var(--mid-grey-hover, #385a6d);
+  background: #385a6d;
   transform: translateY(-3px);
   box-shadow: 0 8px 0 var(--dark-grey);
 }
 
-
-
-/* Effet sélection visuel (bordure + couleur) */
-.symbol-option input:checked ~ * {
- filter: drop-shadow(0 0 10px var(--primary));
- Box-shadow: 0 8px 0 var(--primary);
+.symbol-option input:checked + img {
+  filter: drop-shadow(0 0 10px var(--primary));
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .symbols {
-    gap: 1rem;
-  }
-
-  .symbol-option img {
-    width: 40px;
-    height: 40px;
-  }
-}
-    
-
 /* ===================================================== */
-/*                    GAME BOARD                      */
+/*                     GAME BOARD                         */
 /* ===================================================== */
-
 .game {
   background: var(--dark-grey);
   padding: 2rem;
@@ -307,16 +284,16 @@ nav {
   justify-content: space-between;
   margin-bottom: 1.2rem;
   font-size: 1.1rem;
-  
-}
-.game-actions img{
-  height:77px ;
-  width: 77px;
 }
 
 .game-actions {
   display: flex;
   gap: 5rem;
+}
+
+.game-actions img {
+  height: 77px;
+  width: 77px;
 }
 
 .btn-secondary {
@@ -326,21 +303,20 @@ nav {
   border-radius: var(--radius);
   box-shadow: 0 6px 0 var(--light-grey-shadow);
   cursor: pointer;
-  height:77px ;
+  height: 77px;
   width: 77px;
   display: flex;
   align-items: center;
   justify-content: center;
-  
 }
+
 .rest-icon {
   width: 40px;
   height: 40px;
   object-fit: contain;
 }
 
-/* ------------------ GRID ------------------ */
-
+/* GRID */
 .board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -371,18 +347,109 @@ nav {
   box-shadow: 0 10px 0 var(--dark-grey);
 }
 
-/* Cellule gagnante */
 .cell-highlight {
-  background: var( --light-grey);
+  background: var(--light-grey);
   border-color: var(--mid-grey);
   box-shadow: 0 7px 0 var(--dark-grey);
-  
 }
 
-/* =============================== */
-/*         SCORE GRID 3 BOX        */
-/* =============================== */
+/* ===================================================== */
+/*                    SCOREBOARD                          */
+/* ===================================================== */
+.scoreboard {
+  margin-top: 18px;
+  background: var(--mid-grey);
+  border: 2px solid var(--mid-grey-shadow);
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  text-align: center;
+  width: 100%;
+  max-width: 450px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  box-shadow: 0 6px 0 var(--dark-grey);
+}
 
+.scoreboard p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--light-grey);
+}
+
+.scoreboard p span {
+  color: var(--secondary);
+  font-weight: 800;
+  text-shadow: 0 0 6px var(--secondary-shadow);
+}
+
+.scoreboard:hover {
+  transform: translateY(-3px);
+  transition: 0.2s ease;
+  box-shadow: 0 8px 0 var(--mid-grey-shadow);
+}
+
+/* ===================================================== */
+/*                         POPUP                           */
+/* ===================================================== */
+
+.game-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999 !important; /* ALWAYS ON TOP */
+}
+
+.popup-content {
+  background: var(--mid-grey);
+  padding: 25px 30px;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 500px;
+  max-width: 90%;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+}
+
+.popup-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.btn-leave, .btn-restart {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.btn-leave { 
+  background: var(--secondary);  
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+} 
+.btn-restart { 
+  background: var(--primary);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+
+.btn-leave:hover { background:var(--secondary-shadow); }
+.btn-restart:hover { background:var(--light-grey-shadow); }
+
+
+/* ===================================================== */
+/*                  SCORE GRID (X / TIE / O)              */
+/* ===================================================== */
 .score-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -390,7 +457,6 @@ nav {
   margin: 1.6rem 0 2rem 0;
 }
 
-/* Style général de chaque box */
 .score-box {
   padding: 1rem 0;
   border-radius: 16px;
@@ -413,96 +479,29 @@ nav {
   margin-top: 4px;
 }
 
-/* Survol */
 .score-box:hover {
   transform: translateY(-3px);
   filter: brightness(1.05);
 }
 
-/* Spécifique X */
 .score-x {
   background: var(--primary);
   box-shadow: 0 6px 0 #1e7c7a;
 }
 
-/* Spécifique TIES */
 .score-ties {
   background: var(--light-grey);
   box-shadow: 0 6px 0 var(--light-grey-shadow);
 }
 
-/* Spécifique O */
 .score-o {
   background: var(--secondary);
   box-shadow: 0 6px 0 var(--secondary-shadow);
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .score-box {
-    padding: 0.8rem 0;
-    font-size: 1rem;
-  }
-
-  .score-box div:last-child {
-    font-size: 1.2rem;
-  }
-}
-
-
-/* ============================================ */
-/*      RESULT POPUP (creative styling)         */
-/* ============================================ */
-
-.result {
-  margin-top: 1.8rem;
-  background: var(--mid-grey);
-  padding: 1.6rem;
-  border-radius: 18px;
-  text-align: center;
-  color: white;
-
-  box-shadow: 
-    0 6px 0 var(--mid-grey-shadow),
-    0 0 20px rgba(0,0,0,0.3);
-
-  animation: resultPopup 0.35s ease-out;
-}
-
-/* Animation d’apparition */
-@keyframes resultPopup {
-  from { opacity: 0; transform: scale(0.8); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* Texte du message */
-.result p {
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin: 0;
-  color: var(--primary);
-  text-shadow: 0 2px 0 var(--dark-grey);
-}
-
-/* MATCH NUL coloré différemment */
-.result p:contains("Match nul") {
-  color: var(--secondary);
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .result {
-    padding: 1.2rem;
-  }
-
-  .result p {
-    font-size: 1.2rem;
-  }
-}
-/* ============================ */
-/*   Petit indicateur de tour   */
-/* ============================ */
-
+/* ===================================================== */
+/*            SMALL TURN INDICATOR (TOP RIGHT)            */
+/* ===================================================== */
 .turn-indicator-small {
   background: var(--mid-grey);
   padding: 0.5rem 1rem;
@@ -515,11 +514,20 @@ nav {
   box-shadow: 0 4px 0 var(--mid-grey-shadow);
   margin-right: 1rem;
   font-size: 0.95rem;
-  height:77px ;
+  height: 77px;
   width: 100px;
 }
 
 .turn-indicator-small strong {
   color: var(--light-grey-shadow);
   font-size: 1.2rem;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .symbols { gap: 1rem; }
+  .symbol-option img { width: 40px; height: 40px; }
+
+  .score-box { padding: 0.8rem 0; font-size: 1rem; }
+  .score-box div:last-child { font-size: 1.2rem; }
 }

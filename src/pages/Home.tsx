@@ -30,17 +30,26 @@ const [symbol, setSymbol] = useState<'X' | 'O'>('X')
     
     <section className="home">
       <div className="choose-variant">
-  
+        <div className="variant-select">
+  <h2>Choisir le type de jeu</h2>
 
-  <div className="variant-select">
-    <h2>Choisir le type de jeu</h2>
-  <label>
-    <input type="radio" checked={variant === 'classic'} onChange={() => setVariant('classic')} />
+  <label className={`mode ${variant === 'classic' ? 'active' : ''}`}>
+    <input
+      type="radio"
+      name="variant"
+      checked={variant === 'classic'}
+      onChange={() => setVariant('classic')}
+    />
     Classique
   </label>
-  
-  <label>
-    <input type="radio" checked={variant === 'variant'} onChange={() => setVariant('variant')} />
+
+  <label className={`mode ${variant === 'variant' ? 'active' : ''}`}>
+    <input
+      type="radio"
+      name="variant"
+      checked={variant === 'variant'}
+      onChange={() => setVariant('variant')}
+    />
     Variante — 3 coups max
   </label>
 </div>
