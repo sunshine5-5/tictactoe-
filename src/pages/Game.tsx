@@ -50,7 +50,8 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
       variant: state.variant,
       players: state.players,
       winner: r.winner,
-      Symbol: state.startingSymbol, 
+      Symbol: state.startingSymbol,
+      startingSymbol: state.startingSymbol,
       date: new Date().toISOString(),
     });
     saveState("history", history);
@@ -204,6 +205,10 @@ export default function Game({ game, setGame }: { game: GameState|null; setGame:
           );
         })}
       </div>
+
+
+
+
 
       {result && (
         <div className="result">
